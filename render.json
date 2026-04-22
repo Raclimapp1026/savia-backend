@@ -1,0 +1,6 @@
+{
+  "name": "savia-backend",
+  "env": "node",
+  "buildCommand": "npm install --legacy-peer-deps && npx prisma generate && npm run build",
+  "startCommand": "node dist/main"
+}

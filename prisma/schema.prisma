@@ -1,0 +1,286 @@
+// ============================================================
+// Sistema de Gestión de Soporte Técnico mediante QR
+// Modelo de datos - Prisma Schema
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum Rol {
+  ADMIN
+  SUPERVISOR
+  TECNICO
+}
+
+enum Prioridad {
+  BAJA
+  MEDIA
+  ALTA
+  CRITICA
+}
+
+enum EstadoTicket {
+  ABIERTO
+  ASIGNADO
+  EN_PROCESO
+  RESUELTO
+  CERRADO
+}
+
+enum TipoEquipo {
+  PORTATIL
+  EQUIPO_MESA
+  IMPRESORA
+  IMPRESORA_MULTIFUNCIONAL
+  TELEFONO_IP
+  NO_APLICA
+}
+
+enum EstadoEquipo {
+  ACTIVO
+  EN_MANTENIMIENTO
+  DADO_DE_BAJA
+  EN_BODEGA
+}
+
+enum EstadoPresencia {
+  DISPONIBLE
+  AUSENTE
+  EN_DESCANSO
+  NO_DISPONIBLE
+}
+
+// ==================== MODELOS ====================
+
+model Usuario {
+  id               String          @id @default(uuid())
+  nombre           String          @db.VarChar(100)
+  correo           String          @unique @db.VarChar(150)
+  passwordHash     String          @map("password_hash") @db.VarChar(255)
+  rol              Rol
+  activo           Boolean         @default(true)
+  fechaCreacion    DateTime        @default(now()) @map("fecha_creacion")
+  estadoPresencia  EstadoPresencia @default(NO_DISPONIBLE) @map("estado_presencia")
+  ultimaActividad  DateTime?       @map("ultima_actividad")
+
+  // Relaciones
+  ticketsAsignados  Ticket[]          @relation("TecnicoTickets")
+  comentarios       Comentario[]
+  historialEstados  HistorialEstado[]
+  diagnosticos      DiagnosticoTecnico[] @relation("DiagnosticosTecnico")
+  movimientosInsumo MovimientoInsumo[]   @relation("MovimientosInsumo")
+
+  @@map("usuarios")
+}
+
+model Oficina {
+  id        String  @id @default(uuid())
+  nombre    String  @unique @db.VarChar(100)
+  ubicacion String? @db.VarChar(200)
+  codigoQr  String? @map("codigo_qr") @db.Text
+  activa    Boolean @default(true)
+
+  // Relaciones
+  tickets Ticket[]
+  equipos Equipo[]
+
+  @@map("oficinas")
+}
+
+model TipoFalla {
+  id          String  @id @default(uuid())
+  nombre      String  @unique @db.VarChar(100)
+  descripcion String? @db.Text
+  activo      Boolean @default(true)
+
+  // Relaciones
+  tickets Ticket[]
+
+  @@map("tipos_falla")
+}
+
+model Ticket {
+  id                 String       @id @default(uuid())
+  codigoTicket       String       @unique @map("codigo_ticket") @db.VarChar(20)
+  nombreSolicitante  String       @map("nombre_solicitante") @db.VarChar(100)
+  correoSolicitante  String       @map("correo_solicitante") @db.VarChar(150)
+  celularSolicitante String       @map("celular_solicitante") @db.VarChar(20)
+  descripcion        String?      @db.Text
+  prioridad          Prioridad
+  estado             EstadoTicket @default(ABIERTO)
+  fechaCreacion      DateTime     @default(now()) @map("fecha_creacion")
+  fechaAsignacion    DateTime?    @map("fecha_asignacion")
+  fechaResolucion    DateTime?    @map("fecha_resolucion")
+  fechaCierre        DateTime?    @map("fecha_cierre")
+
+  // Foreign Keys
+  oficinaId   String  @map("oficina_id")
+  tipoFallaId String  @map("tipo_falla_id")
+  tecnicoId   String? @map("tecnico_id")
+
+  // Relaciones
+  oficina   Oficina   @relation(fields: [oficinaId], references: [id])
+  tipoFalla TipoFalla @relation(fields: [tipoFallaId], references: [id])
+  tecnico   Usuario?  @relation("TecnicoTickets", fields: [tecnicoId], references: [id])
+
+  comentarios      Comentario[]
+  historialEstados HistorialEstado[]
+  diagnostico      DiagnosticoTecnico?
+
+  @@index([estado])
+  @@index([prioridad])
+  @@index([fechaCreacion])
+  @@index([tecnicoId])
+  @@index([oficinaId])
+  @@map("tickets")
+}
+
+model DiagnosticoTecnico {
+  id             String     @id @default(uuid())
+  tipoEquipo     TipoEquipo @map("tipo_equipo")
+  marca          String     @db.VarChar(100)
+  modelo         String     @db.VarChar(100)
+  serial         String     @db.VarChar(100)
+  observaciones  String     @db.Text
+  fotoEvidencia  String?    @map("foto_evidencia") @db.VarChar(500)
+  fecha          DateTime   @default(now())
+
+  // Foreign Keys
+  ticketId  String  @unique @map("ticket_id")
+  tecnicoId String  @map("tecnico_id")
+
+  // Relaciones
+  ticket  Ticket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  tecnico Usuario @relation("DiagnosticosTecnico", fields: [tecnicoId], references: [id])
+
+  @@map("diagnosticos_tecnico")
+}
+
+model Comentario {
+  id        String   @id @default(uuid())
+  contenido String   @db.Text
+  fecha     DateTime @default(now())
+
+  // Foreign Keys
+  ticketId  String @map("ticket_id")
+  usuarioId String @map("usuario_id")
+
+  // Relaciones
+  ticket  Ticket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@index([ticketId])
+  @@map("comentarios")
+}
+
+model HistorialEstado {
+  id             String       @id @default(uuid())
+  estadoAnterior EstadoTicket? @map("estado_anterior")
+  estadoNuevo    EstadoTicket @map("estado_nuevo")
+  observacion    String?      @db.Text
+  fecha          DateTime     @default(now())
+
+  // Foreign Keys
+  ticketId  String @map("ticket_id")
+  usuarioId String @map("usuario_id")
+
+  // Relaciones
+  ticket  Ticket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@index([ticketId])
+  @@map("historial_estados")
+}
+
+model Equipo {
+  id               String       @id @default(uuid())
+  placaInventario  String       @unique @map("placa_inventario") @db.VarChar(50)
+  tipoEquipo       TipoEquipo   @map("tipo_equipo")
+  marca            String       @db.VarChar(100)
+  modelo           String       @db.VarChar(100)
+  serial           String       @unique @db.VarChar(100)
+  estado           EstadoEquipo @default(ACTIVO)
+  fechaAdquisicion DateTime?    @map("fecha_adquisicion")
+  proveedor        String?      @db.VarChar(150)
+  observaciones    String?      @db.Text
+  fechaRegistro    DateTime     @default(now()) @map("fecha_registro")
+  fechaActualizacion DateTime   @updatedAt @map("fecha_actualizacion")
+
+  // Foreign Keys
+  oficinaId String @map("oficina_id")
+
+  // Relaciones
+  oficina Oficina @relation(fields: [oficinaId], references: [id])
+
+  @@index([oficinaId])
+  @@index([tipoEquipo])
+  @@index([estado])
+  @@map("equipos")
+}
+
+enum TipoInsumo {
+  TINTA
+  TONER
+}
+
+enum TipoMovimiento {
+  INGRESO
+  SALIDA
+}
+
+model Insumo {
+  id               String     @id @default(uuid())
+  codigo           String     @unique @db.VarChar(50)
+  tipoInsumo       TipoInsumo @map("tipo_insumo")
+  marca            String     @db.VarChar(100)
+  modelo           String     @db.VarChar(100)
+  color            String     @db.VarChar(50)
+  compatibleCon    String?    @map("compatible_con") @db.VarChar(200)
+  stockActual      Int        @default(0) @map("stock_actual")
+  stockMinimo      Int        @default(2) @map("stock_minimo")
+  observaciones    String?    @db.Text
+  activo           Boolean    @default(true)
+  fechaRegistro    DateTime   @default(now()) @map("fecha_registro")
+  fechaActualizacion DateTime @updatedAt @map("fecha_actualizacion")
+
+  // Relaciones
+  movimientos MovimientoInsumo[]
+
+  @@index([tipoInsumo])
+  @@index([stockActual])
+  @@map("insumos")
+}
+
+model MovimientoInsumo {
+  id              String         @id @default(uuid())
+  tipo            TipoMovimiento
+  cantidad        Int
+  fecha           DateTime       @default(now())
+  observacion     String?        @db.Text
+  proveedor       String?        @db.VarChar(150)
+  oficina         String?        @db.VarChar(100)
+  firmaTecnico    String?        @map("firma_tecnico") @db.Text
+  firmaRecibe     String?        @map("firma_recibe") @db.Text
+  nombreRecibe    String?        @map("nombre_recibe") @db.VarChar(100)
+  cargoRecibe     String?        @map("cargo_recibe") @db.VarChar(100)
+
+  // Foreign Keys
+  insumoId  String @map("insumo_id")
+  usuarioId String @map("usuario_id")
+
+  // Relaciones
+  insumo  Insumo  @relation(fields: [insumoId], references: [id], onDelete: Cascade)
+  usuario Usuario @relation("MovimientosInsumo", fields: [usuarioId], references: [id])
+
+  @@index([insumoId])
+  @@index([fecha])
+  @@map("movimientos_insumo")
+}
