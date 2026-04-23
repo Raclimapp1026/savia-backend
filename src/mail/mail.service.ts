@@ -83,6 +83,14 @@ export class MailService {
     return `<span style="background-color:${colores[prioridad]||'#718096'};color:#fff;padding:3px 12px;border-radius:12px;font-size:11px;font-weight:bold;">${prioridad}</span>`;
   }
 
+  private botonLogin(texto: string): string {
+    const frontendUrl = this.config.get('FRONTEND_URL', 'https://savia-frontend.vercel.app');
+    return `<div style="text-align:center;margin:20px 0 8px;">
+      <a href="${frontendUrl}/login" style="display:inline-block;background-color:#08ae62;color:#ffffff;padding:12px 32px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:bold;">${texto}</a>
+    </div>
+    <p style="text-align:center;font-size:11px;color:#6b8578;margin:0;">O copie este enlace: ${frontendUrl}/login</p>`;
+  }
+
   private alertBox(color: string, bgColor: string, texto: string): string {
     return `<div style="background-color:${bgColor};border-left:4px solid ${color};padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0;">
       <p style="color:${color};font-size:13px;margin:0;">${texto}</p>
@@ -133,6 +141,7 @@ export class MailService {
         ${ticket.descripcion ? this.infoRow('Descripcion', ticket.descripcion) : ''}
       </table>
       ${this.alertBox('#d69e2e', '#fffbeb', '<strong>Accion requerida:</strong> Ingrese al sistema para asignar prioridad y tecnico a este ticket.')}
+      ${this.botonLogin('Ir al sistema SAVIA')}
     `;
     await this.transporter.sendMail({
       from: this.getFrom(), to: adminEmail,
@@ -157,6 +166,7 @@ export class MailService {
         ${ticket.descripcion ? this.infoRow('Descripcion', ticket.descripcion) : ''}
       </table>
       ${this.alertBox('#08ae62', '#ecfdf5', '<strong>Accion requerida:</strong> Ingrese al sistema para atender este ticket y cambiar su estado a "En Proceso".')}
+      ${this.botonLogin('Atender ticket')}
     `;
     await this.transporter.sendMail({
       from: this.getFrom(), to: ticket.tecnico.correo,
@@ -181,6 +191,7 @@ export class MailService {
         ${this.infoRow('Oficina', ticket.oficina?.nombre || '')}
       </table>
       ${this.alertBox('#08ae62', '#ecfdf5', '<strong>Accion requerida:</strong> Verifique el diagnostico tecnico y cierre el ticket si todo esta correcto.')}
+      ${this.botonLogin('Verificar y cerrar ticket')}
     `;
     await this.transporter.sendMail({
       from: this.getFrom(), to: adminEmail,
