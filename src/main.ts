@@ -46,7 +46,7 @@ async function bootstrap() {
   );
 
   const port = process.env.APP_PORT || 3001;
-  await app.listen(port);
+  await app.listen(process.env.PORT ?? 3001);
   console.log(`API corriendo en http://localhost:${port}/api`);
   console.log(`Seguridad: Helmet activo, Rate Limiting activo, CORS configurado`);
 }
