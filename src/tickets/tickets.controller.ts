@@ -136,7 +136,7 @@ export class TicketsController {
   ) {
    const appUrl = process.env.APP_URL || 'http://localhost:3001';
    const fotoPath = foto ? `${appUrl}/uploads/evidencias/${foto.filename}` : undefined;
-    return this.ticketsService.resolverTicket(id, dto, user, fotoPath);
+   return this.ticketsService.resolverTicket(id, dto, user, fotoPath);
   }
 
   @Put(':id/estado')
