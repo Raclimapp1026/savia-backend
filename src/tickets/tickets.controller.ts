@@ -134,7 +134,8 @@ export class TicketsController {
     @UploadedFile() foto: any,
     @CurrentUser() user: any,
   ) {
-    const fotoPath = foto ? `/uploads/evidencias/${foto.filename}` : undefined;
+   const appUrl = process.env.APP_URL || 'http://localhost:3001';
+   const fotoPath = foto ? `${appUrl}/uploads/evidencias/${foto.filename}` : undefined;
     return this.ticketsService.resolverTicket(id, dto, user, fotoPath);
   }
 
