@@ -6,6 +6,8 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { SanitizePipe } from './common/pipes/sanitize.pipe';
 
+// Fallback si APP_URL no está configurada
+process.env.APP_URL = process.env.APP_URL || 'https://api.saviaticpuerto.cloud';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
