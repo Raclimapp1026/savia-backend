@@ -34,7 +34,7 @@ export class UsuariosController {
   }
 
   @Get('tecnicos')
-  @Roles('ADMIN')
+  @Roles('ADMIN','SUPERVISOR')
   findTecnicos() {
     return this.usuariosService.findTecnicos();
   }
