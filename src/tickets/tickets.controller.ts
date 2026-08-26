@@ -134,8 +134,8 @@ export class TicketsController {
     @UploadedFile() foto: any,
     @CurrentUser() user: any,
   ) {
-   const appUrl = process.env.APP_URL || 'https://api.saviaticpuerto.cloud';
-   const fotoPath = foto ? `${appUrl}/uploads/evidencias/${foto.filename}` : undefined;
+   // Guardar ruta relativa, sin dominio
+const fotoPath = foto ? `/uploads/evidencias/${foto.filename}` : undefined;
    return this.ticketsService.resolverTicket(id, dto, user, fotoPath);
   }
 
