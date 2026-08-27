@@ -136,6 +136,7 @@ export class TicketsController {
   ) {
    // Guardar ruta relativa, sin dominio
 const fotoPath = foto ? `/uploads/evidencias/${foto.filename}` : undefined;
+    console.log('📸 fotoPath generado en controller:', fotoPath);
    return this.ticketsService.resolverTicket(id, dto, user, fotoPath);
   }
 
