@@ -449,6 +449,7 @@ export class TicketsService {
   // ==========================================
   async resolverTicket(ticketId: string, dto: ResolverTicketDto, user: any, fotoPath?: string) {
     const ticket = await this.findOne(ticketId);
+    console.log('📸 [Service] fotoPath recibido:', fotoPath);
 
     // Validar que el ticket está EN_PROCESO
     if (ticket.estado !== 'EN_PROCESO') {
